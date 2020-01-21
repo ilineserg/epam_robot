@@ -29,20 +29,19 @@ class Robot:
         self.position = list(map(lambda a, b: a + b, self.position, self.rotated))
         print(self.position)
 
-    def rotate_90(self, side):
-        if side == 'right':
+    def rotate(self, side):
+        if side == 'left':
             if self.rotated[0] == 0:
                 self.rotated[0], self.rotated[1] = self.rotated[1] * -1, self.rotated[0]
             else:
                 self.rotated[0], self.rotated[1] = self.rotated[1], self.rotated[0]
-        elif side == 'left':
+        elif side == 'right':
             if self.rotated[1] == 0:
                 self.rotated[0], self.rotated[1] = self.rotated[1], self.rotated[0] * -1
             else:
                 self.rotated[0], self.rotated[1] = self.rotated[1], self.rotated[0]
-
-    def rotate_180(self):
-        self.rotated = list(map(lambda x: x * (- 1), self.rotated))
+        elif side == 'back':
+            self.rotated = list(map(lambda x: x * (- 1), self.rotated))
 
 
 class Game:
@@ -56,6 +55,19 @@ class Game:
         self.position = self.center + \
                         self.robot.position[0] - \
                         self.width * self.robot.position[1]
+        self.last_command = 'w'
+        self.rotates_dict = {('w', 'd'): 'right',
+                             ('d', 's'): 'right',
+                             ('s', 'a'): 'right',
+                             ('a', 'w'): 'right',
+                             ('w', 'a'): 'left',
+                             ('a', 's'): 'left',
+                             ('s', 'd'): 'left',
+                             ('d', 'w'): 'left',
+                             ('w', 's'): 'back',
+                             ('s', 'w'): 'back',
+                             ('a', 'd'): 'back',
+                             ('d', 'a'): 'back'}
         self.set_wall()
         self.draw()
 
@@ -82,6 +94,7 @@ class Game:
         self.move_robot_position(command)
         self.draw()
         print(f'Робот повернут: {self.robot.rotated}')
+        print(f'')
         print(f'Вы сходили: {command}, {type(command)}, {self.position}')
         self.render()
 
@@ -113,18 +126,11 @@ class Game:
             self.field[r] = iterator_body.__next__()
 
     def move_robot_position(self, command):
-        if command == 'w':
+        if command == self.last_command:
             self.robot.move()
-        elif command == 's':
-            self.robot.move()
-        elif command == 'a':
-            self.robot.move()
-        elif command == 'd':
-            self.robot.move()
-        elif command in ['left', 'right']:
-            self.robot.rotate_90(command)
-        elif command == 'back':
-            self.robot.rotate_180()
+        elif (self.last_command, command) in self.rotates_dict:
+            self.robot.rotate(self.rotates_dict.get((self.last_command, command)))
+            self.last_command = command
         else:
             print('Неверная команда')
 
