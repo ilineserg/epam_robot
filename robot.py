@@ -2,7 +2,22 @@ class Robot:
 
     def __init__(self):
         self.position = [0, 0]
-        self.body = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+        self.body = [u'\u2554', u'\u2551', u'\u2557',
+                     u'\u2551', u'\u2550', u'\u2551',
+                     u'\u255a', u'\u2550', u'\u255d']
+        self.rotated_up = [u'\u2554', u'\u2551', u'\u2557',
+                           u'\u2551', u'\u2550', u'\u2551',
+                           u'\u255a', u'\u2550', u'\u255d']
+        self.rotated_down = [u'\u2554', u'\u2550', u'\u2557',
+                             u'\u2551', u'\u2550', u'\u2551',
+                             u'\u255a', u'\u2551', u'\u255d']
+        self.rotated_left = [u'\u2554', u'\u2550', u'\u2557',
+                             u'\u2550', u'\u2551', u'\u2551',
+                             u'\u255a', u'\u2550', u'\u255d']
+        self.rotated_right = [u'\u2554', u'\u2550', u'\u2557',
+                              u'\u2551', u'\u2551', u'\u2550',
+                              u'\u255a', u'\u2550', u'\u255d']
+        self.rotated = [0, 1]
 
     def get_position(self):
         return self.position
@@ -10,21 +25,24 @@ class Robot:
     def get_body(self):
         return self.body
 
-    def move_up(self):
-        self.position[1] += 1
+    def move(self):
+        self.position = list(map(lambda a, b: a + b, self.position, self.rotated))
         print(self.position)
 
-    def move_down(self):
-        self.position[1] -= 1
-        print(self.position)
+    def rotate_90(self, side):
+        if side == 'right':
+            if self.rotated[0] == 0:
+                self.rotated[0], self.rotated[1] = self.rotated[1] * -1, self.rotated[0]
+            else:
+                self.rotated[0], self.rotated[1] = self.rotated[1], self.rotated[0]
+        elif side == 'left':
+            if self.rotated[1] == 0:
+                self.rotated[0], self.rotated[1] = self.rotated[1], self.rotated[0] * -1
+            else:
+                self.rotated[0], self.rotated[1] = self.rotated[1], self.rotated[0]
 
-    def move_left(self):
-        self.position[0] -= 1
-        print(self.position)
-
-    def move_right(self):
-        self.position[0] += 1
-        print(self.position)
+    def rotate_180(self):
+        self.rotated = list(map(lambda x: x * (- 1), self.rotated))
 
 
 class Game:
@@ -38,18 +56,32 @@ class Game:
         self.position = self.center + \
                         self.robot.position[0] - \
                         self.width * self.robot.position[1]
-        self.draw_wipe('+')
+        self.set_wall()
+        self.draw()
+
+    def set_wall(self):
+        for wall in range(0, self.width):
+            self.field[wall] = '#'
+        for wall in range(-self.width, -1):
+            self.field[wall] = '#'
+        for wall in range(self.width, self.width * self.height, self.width):
+            self.field[wall] = '#'
+        for wall in range(self.width * 2 - 1, self.width * self.height,
+                          self.width):
+            self.field[wall] = '#'
 
     def render(self):
         for i in range(0, self.height):
-            raw = ' '.join([self.field[j] for j in range(i*self.width, i*self.width + self.width)])
+            raw = ' '.join([self.field[j] for j in
+                            range(i * self.width, i * self.width + self.width)])
             print(raw)
 
     def update(self, command):
 
-        self.draw_wipe('-')
+        self.wipe()
         self.move_robot_position(command)
-        self.draw_wipe('+')
+        self.draw()
+        print(f'Робот повернут: {self.robot.rotated}')
         print(f'Вы сходили: {command}, {type(command)}, {self.position}')
         self.render()
 
@@ -61,20 +93,38 @@ class Game:
                        row_bottom - 1, row_bottom, row_bottom + 1]
         return robot_coord
 
-    def draw_wipe(self, act):
-        robot = self.render_robot_body()
-        for c in robot:
-            self.field[c] = act
+    def wipe(self):
+        robot_shadow = self.render_robot_body()
+        for rs in robot_shadow:
+            self.field[rs] = ' '
+
+    def draw(self):
+        iterator_body = []
+        robot_shadow = self.render_robot_body()
+        if self.robot.rotated == [0, 1]:
+            iterator_body = iter(self.robot.rotated_up)
+        elif self.robot.rotated == [0, -1]:
+            iterator_body = iter(self.robot.rotated_down)
+        elif self.robot.rotated == [-1, 0]:
+            iterator_body = iter(self.robot.rotated_left)
+        elif self.robot.rotated == [1, 0]:
+            iterator_body = iter(self.robot.rotated_right)
+        for r in robot_shadow:
+            self.field[r] = iterator_body.__next__()
 
     def move_robot_position(self, command):
         if command == 'w':
-            self.robot.move_up()
+            self.robot.move()
         elif command == 's':
-            self.robot.move_down()
+            self.robot.move()
         elif command == 'a':
-            self.robot.move_left()
+            self.robot.move()
         elif command == 'd':
-            self.robot.move_right()
+            self.robot.move()
+        elif command in ['left', 'right']:
+            self.robot.rotate_90(command)
+        elif command == 'back':
+            self.robot.rotate_180()
         else:
             print('Неверная команда')
 
@@ -87,14 +137,18 @@ class Game:
 
 
 def run_game():
-    print(' '.join([u'\u2554', u'\u2550', u'\u2557']))
-    print(' '.join([u'\u2551', u'\u2551', u'\u2550']))
-    print(' '.join([u'\u255a', u'\u2550', u'\u255d']))
+    print(chr(27) + "[2J")
+
     robot = Robot()
     game = Game(15, 15, robot)
     game.render()
     while True:
-        print('w - up, s - down, d - right, a - left')
+        print('\x1b[0;32;40m' + 'Поехали!' + '\x1b[0m')
+        print('w - move up, s - move down, d - move right, a - move left')
+        print('up - rotate up, '
+              'down - rotate down, '
+              'right - rotate right, '
+              'left - rotate left')
         command = input('Ваш ход: ')
         game.update(command)
 
