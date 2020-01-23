@@ -388,9 +388,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--width", type=int, default=30,
                         help="width of game field")
-    parser.add_argument("--height", type=int, default=20,
+    parser.add_argument("--height", type=int, default=30,
                         help="height of game field")
-    parser.add_argument("--obstacles", type=int, default=10,
+    parser.add_argument("--obstacles", type=int, default=5,
                         help="number of obstacles on the field")
     parser.add_argument("--replay", type=argparse.FileType('r'),
                         help="number of obstacles on the field")
