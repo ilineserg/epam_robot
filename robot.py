@@ -5,16 +5,22 @@ import sys
 import random
 from collections import namedtuple
 from enum import Enum
-from time import sleep, time
+from time import sleep
 
 
 class Colors(Enum):
+    """
+    Available colors.
+    """
     RED = '\x1b[91m'
     GREEN = '\x1b[32m'
     END = '\x1b[0m'
 
 
 def colorize(text: str, color: Colors) -> str:
+    """
+    Colorizing a text string.
+    """
     return f"{color.value}{text}{Colors.END.value}"
 
 
@@ -22,6 +28,13 @@ Point = namedtuple("Point", ["x", "y"])
 
 
 class RotateDirection(Enum):
+    """
+    Direction of rotation
+    -1 is 90 degrees to the right
+    1 is 90 degrees left
+    0 is 180 degree rotation
+    None if the current direction is equal to the next
+    """
     FORWARD = None
     BACKWARD = 0
     LEFT = 1
@@ -29,6 +42,9 @@ class RotateDirection(Enum):
 
 
 class Commands(Enum):
+    """
+    Game commands.
+    """
     KEY_UP = 1
     KEY_DOWN = 2
     KEY_LEFT = 3
@@ -50,25 +66,49 @@ KEY_COMMANDS = {
 
 
 class Robot:
-
+    """
+    Robot.s
+    """
     def __init__(self):
         self.position = Point(0, 0)
         self.direction = Point(0, 1)
         self.color = Colors.GREEN
 
-        self.body = u'\u2554\u2551\u2557\u2551\u2550\u2551\u255a\u2550\u255d'
-        self.rotated_up = u'\u2554\u2551\u2557\u2551\u2550\u2551\u255a\u2550\u255d'
-        self.rotated_down = u'\u2554\u2550\u2557\u2551\u2550\u2551\u255a\u2551\u255d'
-        self.rotated_left = u'\u2554\u2550\u2557\u2550\u2551\u2551\u255a\u2550\u255d'
-        self.rotated_right = u'\u2554\u2550\u2557\u2551\u2551\u2550\u255a\u2550\u255d'
+        self.body = u'\u2554\u2551\u2557' \
+                    u'\u2551\u2550\u2551' \
+                    u'\u255a\u2550\u255d'
+        self.rotated_up = u'\u2554\u2551\u2557' \
+                          u'\u2551\u2550\u2551' \
+                          u'\u255a\u2550\u255d'
+        self.rotated_down = u'\u2554\u2550\u2557' \
+                            u'\u2551\u2550\u2551' \
+                            u'\u255a\u2551\u255d'
+        self.rotated_left = u'\u2554\u2550\u2557' \
+                            u'\u2550\u2551\u2551' \
+                            u'\u255a\u2550\u255d'
+        self.rotated_right = u'\u2554\u2550\u2557' \
+                             u'\u2551\u2551\u2550' \
+                             u'\u255a\u2550\u255d'
 
     def get_position(self) -> Point:
+        """
+        Current robot position.
+        Starts from Point(x=0, y=0)
+        """
         return self.position
 
     def get_direction(self) -> Point:
+        """
+        Current robot direction.
+        Starts from Point(x=0, y=1)
+        """
         return self.direction
 
     def get_body(self):
+        """
+        Robot body signs.
+        Returns depending on direction.
+        """
         if self.direction == (0, 1):
             return self.rotated_up
         elif self.direction == (0, -1):
@@ -79,9 +119,15 @@ class Robot:
             return self.rotated_right
 
     def move(self):
+        """
+        Moving the robot to the next position in the direction
+        """
         self.position = Point(*map(sum, zip(self.position, self.direction)))
 
     def rotate(self, side: RotateDirection):
+        """
+        Rotating the robot to the next direction
+        """
         if side == RotateDirection.LEFT:
             self.direction = Point(-self.direction.y, self.direction.x)
         elif side == RotateDirection.RIGHT:
@@ -91,7 +137,9 @@ class Robot:
 
 
 class Game:
-
+    """
+    Game.
+    """
     WALL_SIGN = '#'
     FREE_SIGN = '-'
 
@@ -104,7 +152,7 @@ class Game:
         self.error_message = ''
         self.commands = []
 
-        self.obstacles_count = obstacles if obstacles else 10
+        self.obstacles_count = obstacles
 
         if field is None:
             self.field = ['-'] * self.height * self.width
@@ -114,9 +162,15 @@ class Game:
             self.field = field
 
     def normalize_position(self, position: Point) -> int:
+        """
+        Convert the coordinates of the position of the robot in the index
+        """
         return self.center + position.x - self.width * position.y
 
     def get_robot_body_idx(self) -> list:
+        """
+        Returns a list of field indexes which belong to the robot
+        """
         position = self.normalize_position(self.robot.get_position())
         row_up = position - self.width
         row_bottom = position + self.width
@@ -126,6 +180,9 @@ class Game:
         return robot_coord
 
     def get_rotate_direction(self, new_direction) -> RotateDirection:
+        """
+        Calculates which direction the rotation should occur.
+        """
         robot_direction = self.robot.get_direction()
         cross = ((robot_direction.x * new_direction.y
                  - robot_direction.y * new_direction.x)
@@ -133,6 +190,10 @@ class Game:
         return RotateDirection(cross)
 
     def get_area_indexes(self, center, size):
+        """
+        Returns a list of indexes on a field near an area defined
+        by a center point and side size
+        """
         centers = [center]
         for i in range(1, size // 2 + 1):
             centers.append(center - self.width * i)
@@ -144,6 +205,9 @@ class Game:
         return area
 
     def set_wall(self):
+        """
+        Field obstruction
+        """
         for idx, _ in enumerate(self.field):
             if (idx < self.width
                     or idx % self.width == 0
@@ -152,6 +216,9 @@ class Game:
                 self.field[idx] = self.WALL_SIGN
 
     def set_obstacles(self):
+        """
+        Setting obstacles inside the field
+        """
         position = self.normalize_position(self.robot.get_position())
         safe_area = self.get_area_indexes(position, 9)
 
@@ -159,7 +226,8 @@ class Game:
         while count > 0:
             position = random.randint(0, self.height * self.width - 1)
             if position not in safe_area:
-                area = self.get_area_indexes(position, random.choice([1, 2, 3, 4]))
+                area = self.get_area_indexes(position,
+                                             random.choice([1, 2, 3, 4]))
                 for idx in area:
                     if (0 <= idx < self.width * self.height
                             and idx not in safe_area):
@@ -167,6 +235,9 @@ class Game:
                 count -= 1
 
     def render(self):
+        """
+        Render game state
+        """
         # clear screen
         print(chr(27) + "[2J")
 
@@ -180,7 +251,8 @@ class Game:
                 item = colorize(robot_body[robot_render_idx], self.robot.color)
                 robot_render_idx += 1
             else:
-                item = colorize(fld, Colors.RED) if fld == self.WALL_SIGN else fld
+                item = colorize(fld, Colors.RED) \
+                    if fld == self.WALL_SIGN else fld
 
             if (idx + 1) % self.width == 0:
                 print(item)
@@ -188,23 +260,32 @@ class Game:
                 print(item, end=" ")
 
         # render info
-        print(colorize(f'Robot direction: {self.robot.get_direction()}', Colors.GREEN))
+        print(colorize(f'Robot direction: {self.robot.get_direction()}',
+                       Colors.GREEN))
         position = self.normalize_position(self.robot.get_position())
         position_coord = self.robot.get_position()
-        print(colorize(f'Your command: {self.last_command or ""}', Colors.GREEN))
+        print(colorize(f'Your command: {self.last_command or ""}',
+                       Colors.GREEN))
         print(colorize(f'Your step: {position}', Colors.GREEN))
-        print(colorize(f'Your step coordinate: {position_coord}', Colors.GREEN))
+        print(colorize(f'Your step coordinate: {position_coord}',
+                       Colors.GREEN))
 
         if self.error_message:
-            print(colorize(f"Error Message: {self.error_message}", Colors.RED))
+            print(colorize(f"Error Message: {self.error_message}",
+                           Colors.RED))
             self.error_message = ''
         else:
             print()
 
         print('W - move up, S - move down, D - move right, A - move left')
-        print('REVERSE - rotate 180, LEFT - left rotate 90, RIGHT - right rotate 90')
+        print('REVERSE - rotate 180, '
+              'LEFT - left rotate 90, '
+              'RIGHT - right rotate 90')
 
     def can_move(self):
+        """
+        Calculates the ability to move forward
+        """
         one_step = Point(*map(sum, zip(self.robot.get_position(),
                                        self.robot.get_direction())))
         center = self.normalize_position(
@@ -220,6 +301,9 @@ class Game:
         return True
 
     def update(self, command: str):
+        """
+        Update game state
+        """
         command = command.upper()
         cmd = KEY_COMMANDS.get(command)
         direction = self.robot.get_direction()
@@ -256,9 +340,12 @@ class Game:
         self.render()
 
 
-def run_game(height, width):
+def run_game(height, width, obstacles):
+    """
+    Run a new game
+    """
     robot = Robot()
-    game = Game(height, width, robot, obstacles=0)
+    game = Game(height, width, robot, obstacles=obstacles)
     game.render()
     try:
         while True:
@@ -269,12 +356,16 @@ def run_game(height, width):
         sys.exit(0)
 
 
-def run_replay(replay):
+def run_replay(replay_dict):
+    """
+    Run a replay of game
+    """
     robot = Robot()
-    game = Game(replay['height'], replay['width'], robot, replay['field'])
+    game = Game(replay_dict['height'], replay_dict['width'], robot,
+                replay_dict['field'])
     game.render()
     try:
-        for command in replay['commands']:
+        for command in replay_dict['commands']:
             game.update(command)
             sleep(1)
     except KeyboardInterrupt:
@@ -282,6 +373,9 @@ def run_replay(replay):
 
 
 def save_game(game: Game):
+    """
+    Save game state for replay
+    """
     data = {
         "field": game.field,
         "height": game.height,
@@ -307,7 +401,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.replay is None:
-        run_game(args.height, args.width)
+        run_game(args.height, args.width, args.obstacles)
     else:
         replay = json.load(args.replay)
         run_replay(replay)

@@ -51,7 +51,7 @@ class TestGame(unittest.TestCase):
 
     def test_normalize_position(self):
         robot = Robot()
-        game = Game(30, 30, robot)
+        game = Game(30, 30, robot, obstacles=0)
 
         self.assertEqual(game.normalize_position(Point(x=0, y=0)), 465)
         self.assertEqual(game.normalize_position(Point(x=0, y=13)), 75)
@@ -61,7 +61,7 @@ class TestGame(unittest.TestCase):
 
     def test_get_robot_body_idx(self):
         robot = Robot()
-        game = Game(30, 30, robot)
+        game = Game(30, 30, robot, obstacles=0)
 
         self.assertEqual(game.get_robot_body_idx(),
                          [434, 435, 436, 464, 465, 466, 494, 495, 496])
@@ -71,7 +71,7 @@ class TestGame(unittest.TestCase):
 
     def test_get_area_indexes(self):
         robot = Robot()
-        game = Game(30, 30, robot)
+        game = Game(30, 30, robot, obstacles=0)
         position_1 = game.normalize_position(Point(x=0, y=0))
         position_2 = game.normalize_position(Point(x=7, y=13))
         position_3 = game.normalize_position(Point(x=-1, y=-5))
@@ -85,7 +85,7 @@ class TestGame(unittest.TestCase):
 
     def test_can_move(self):
         robot = Robot()
-        game = Game(30, 30, robot)
+        game = Game(30, 30, robot, obstacles=0)
         game.robot.position = Point(x=0, y=13)
         game.robot.direction = Point(x=0, y=1)
 
