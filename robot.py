@@ -259,13 +259,11 @@ class Game:
         # render info
         print(colorize(f'Robot direction: {self.robot.get_direction()}',
                        Colors.GREEN))
-        position = self.normalize_position(self.robot.get_position())
-        position_coord = self.robot.get_position()
+
+        position = self.robot.get_position()
         print(colorize(f'Your command: {self.last_command or ""}',
                        Colors.GREEN))
-        print(colorize(f'Your step: {position}', Colors.GREEN))
-        print(colorize(f'Your step coordinate: {position_coord}',
-                       Colors.GREEN))
+        print(colorize(f'Your position: {position}', Colors.GREEN))
 
         if self.error_message:
             print(colorize(f"Error Message: {self.error_message}",
@@ -278,6 +276,7 @@ class Game:
         print('REVERSE - rotate 180, '
               'LEFT - left rotate 90, '
               'RIGHT - right rotate 90')
+        print('CTRL + C - for exit')
 
     def can_move(self):
         """
