@@ -67,7 +67,7 @@ KEY_COMMANDS = {
 
 class Robot:
     """
-    Robot.s
+    Robot
     """
     def __init__(self):
         self.position = Point(0, 0)
@@ -135,7 +135,7 @@ class Robot:
 
 class Game:
     """
-    Game.
+    Game
     """
     WALL_SIGN = '#'
     FREE_SIGN = '-'
