@@ -4,7 +4,7 @@
 
 ## Запуск приложения
 
-<python robot.py --width WIDTH --height HEIGHT --obstacles OBSTACLES>
+    python robot.py --width WIDTH --height HEIGHT --obstacles OBSTACLES 
 
 где, 
 WIDTH - ширина игрового поля, по умолчанию 5, 
