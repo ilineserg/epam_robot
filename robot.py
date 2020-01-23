@@ -1,162 +1,202 @@
+from collections import namedtuple
+from enum import Enum
+
+
+class Colors(Enum):
+    RED = '\x1b[91m'
+    GREEN = '\x1b[32m'
+    END = '\x1b[0m'
+
+
+def colorize(text: str, color: Colors) -> str:
+    return f"{color.value}{text}{Colors.END.value}"
+
+
+Point = namedtuple("Point", ["x", "y"])
+
+
+class RotateDirection(Enum):
+    FORWARD = None
+    BACKWARD = 0
+    LEFT = 1
+    RIGHT = -1
+
+
 class Robot:
 
     def __init__(self):
-        self.position = [0, 0]
-        self.body = [u'\u2554', u'\u2551', u'\u2557',
-                     u'\u2551', u'\u2550', u'\u2551',
-                     u'\u255a', u'\u2550', u'\u255d']
-        self.rotated_up = [u'\u2554', u'\u2551', u'\u2557',
-                           u'\u2551', u'\u2550', u'\u2551',
-                           u'\u255a', u'\u2550', u'\u255d']
-        self.rotated_down = [u'\u2554', u'\u2550', u'\u2557',
-                             u'\u2551', u'\u2550', u'\u2551',
-                             u'\u255a', u'\u2551', u'\u255d']
-        self.rotated_left = [u'\u2554', u'\u2550', u'\u2557',
-                             u'\u2550', u'\u2551', u'\u2551',
-                             u'\u255a', u'\u2550', u'\u255d']
-        self.rotated_right = [u'\u2554', u'\u2550', u'\u2557',
-                              u'\u2551', u'\u2551', u'\u2550',
-                              u'\u255a', u'\u2550', u'\u255d']
-        self.rotated = [0, 1]
+        self.position = Point(0, 0)
+        self.direction = Point(0, 1)
+        self.color = Colors.GREEN
 
-    def get_position(self):
+        self.body = u'\u2554\u2551\u2557\u2551\u2550\u2551\u255a\u2550\u255d'
+        self.rotated_up = u'\u2554\u2551\u2557\u2551\u2550\u2551\u255a\u2550\u255d'
+        self.rotated_down = u'\u2554\u2550\u2557\u2551\u2550\u2551\u255a\u2551\u255d'
+        self.rotated_left = u'\u2554\u2550\u2557\u2550\u2551\u2551\u255a\u2550\u255d'
+        self.rotated_right = u'\u2554\u2550\u2557\u2551\u2551\u2550\u255a\u2550\u255d'
+
+    def get_position(self) -> Point:
         return self.position
 
+    def get_direction(self) -> Point:
+        return self.direction
+
     def get_body(self):
-        return self.body
+        if self.direction == (0, 1):
+            return self.rotated_up
+        elif self.direction == (0, -1):
+            return self.rotated_down
+        elif self.direction == (-1, 0):
+            return self.rotated_left
+        elif self.direction == (1, 0):
+            return self.rotated_right
 
     def move(self):
-        self.position = list(map(lambda a, b: a + b, self.position, self.rotated))
-        print(self.position)
+        self.position = Point(*map(sum, zip(self.position, self.direction)))
 
-    def rotate(self, side):
-        if side == 'left':
-            if self.rotated[0] == 0:
-                self.rotated[0], self.rotated[1] = self.rotated[1] * -1, self.rotated[0]
-            else:
-                self.rotated[0], self.rotated[1] = self.rotated[1], self.rotated[0]
-        elif side == 'right':
-            if self.rotated[1] == 0:
-                self.rotated[0], self.rotated[1] = self.rotated[1], self.rotated[0] * -1
-            else:
-                self.rotated[0], self.rotated[1] = self.rotated[1], self.rotated[0]
-        elif side == 'back':
-            self.rotated = list(map(lambda x: x * (- 1), self.rotated))
+    def rotate(self, side: RotateDirection):
+        if side == RotateDirection.LEFT:
+            self.direction = Point(-self.direction.y, self.direction.x)
+        elif side == RotateDirection.RIGHT:
+            self.direction = Point(self.direction.y, -self.direction.x)
+        elif side == RotateDirection.BACKWARD:
+            self.direction = Point(-self.direction.x, -self.direction.y)
 
 
 class Game:
 
-    def __init__(self, height, width, robot, obstructions=0):
+    WALL_SIGN = '#'
+    FREE_SIGN = '-'
+
+    is_live = False
+
+    def __init__(self, height, width, robot):
         self.robot = robot
-        self.field = ['-'] * height * width
         self.width = width
         self.height = height
+
+        self.commands = []
+        self.field = ['-'] * self.height * self.width
         self.center = self.height // 2 * self.width + self.width // 2
-        self.position = self.center + \
-                        self.robot.position[0] - \
-                        self.width * self.robot.position[1]
-        self.last_command = 'w'
-        self.rotates_dict = {('w', 'd'): 'right',
-                             ('d', 's'): 'right',
-                             ('s', 'a'): 'right',
-                             ('a', 'w'): 'right',
-                             ('w', 'a'): 'left',
-                             ('a', 's'): 'left',
-                             ('s', 'd'): 'left',
-                             ('d', 'w'): 'left',
-                             ('w', 's'): 'back',
-                             ('s', 'w'): 'back',
-                             ('a', 'd'): 'back',
-                             ('d', 'a'): 'back'}
+        self.last_command = None
         self.set_wall()
-        self.draw()
 
-    def set_wall(self):
-        for wall in range(0, self.width):
-            self.field[wall] = '#'
-        for wall in range(-self.width, -1):
-            self.field[wall] = '#'
-        for wall in range(self.width, self.width * self.height, self.width):
-            self.field[wall] = '#'
-        for wall in range(self.width * 2 - 1, self.width * self.height,
-                          self.width):
-            self.field[wall] = '#'
+    def normalize_position(self, position: Point) -> int:
+        return self.center + position.x - self.width * position.y
 
-    def render(self):
-        for i in range(0, self.height):
-            raw = ' '.join([self.field[j] for j in
-                            range(i * self.width, i * self.width + self.width)])
-            print(raw)
-
-    def update(self, command):
-
-        self.wipe()
-        self.move_robot_position(command)
-        self.draw()
-        print(f'Робот повернут: {self.robot.rotated}')
-        print(f'')
-        print(f'Вы сходили: {command}, {type(command)}, {self.position}')
-        self.render()
-
-    def render_robot_body(self):
-        row_up = self.position - self.width
-        row_bottom = self.position + self.width
+    def get_robot_body_idx(self) -> list:
+        normalized_position = self.normalize_position(self.robot.get_position())
+        row_up = normalized_position - self.width
+        row_bottom = normalized_position + self.width
         robot_coord = [row_up - 1, row_up, row_up + 1,
-                       self.position - 1, self.position, self.position + 1,
+                       normalized_position - 1, normalized_position, normalized_position + 1,
                        row_bottom - 1, row_bottom, row_bottom + 1]
         return robot_coord
 
-    def wipe(self):
-        robot_shadow = self.render_robot_body()
-        for rs in robot_shadow:
-            self.field[rs] = ' '
+    def get_rotate_direction(self, new_direction) -> RotateDirection:
+        robot_direction = self.robot.get_direction()
+        cross = ((robot_direction.x * new_direction.y
+                 - robot_direction.y * new_direction.x)
+                 if robot_direction != new_direction else None)
+        return RotateDirection(cross)
 
-    def draw(self):
-        iterator_body = []
-        robot_shadow = self.render_robot_body()
-        if self.robot.rotated == [0, 1]:
-            iterator_body = iter(self.robot.rotated_up)
-        elif self.robot.rotated == [0, -1]:
-            iterator_body = iter(self.robot.rotated_down)
-        elif self.robot.rotated == [-1, 0]:
-            iterator_body = iter(self.robot.rotated_left)
-        elif self.robot.rotated == [1, 0]:
-            iterator_body = iter(self.robot.rotated_right)
-        for r in robot_shadow:
-            self.field[r] = iterator_body.__next__()
+    def set_wall(self):
+        for idx, _ in enumerate(self.field):
+            if (idx < self.width
+                    or idx % self.width == 0
+                    or (idx + 1) % self.width == 0
+                    or idx > self.width * self.height - self.width):
+                self.field[idx] = colorize(self.WALL_SIGN, Colors.RED)
 
-    def move_robot_position(self, command):
-        if command == self.last_command:
-            self.robot.move()
-        elif (self.last_command, command) in self.rotates_dict:
-            self.robot.rotate(self.rotates_dict.get((self.last_command, command)))
-            self.last_command = command
+    def render(self):
+        # clear screen
+        print(chr(27) + "[2J")
+
+        # render field end robot
+        robot_indexes = self.get_robot_body_idx()
+        robot_body = self.robot.get_body()
+        robot_render_idx = 0
+
+        for idx, fld in enumerate(self.field):
+            if idx in robot_indexes:
+                item = colorize(robot_body[robot_render_idx], self.robot.color)
+                robot_render_idx += 1
+            else:
+                item = fld
+
+            if (idx + 1) % self.width == 0:
+                print(item)
+            else:
+                print(item, end=" ")
+
+        # render info
+        print(f'Робот повернут: {self.robot.get_direction()}')
+        position = self.normalize_position(self.robot.get_position())
+        print(f'Вы сходили: {self.last_command or ""}, {position}')
+
+        if self.is_live:
+            print('\u2191 - move up, \u2193 - move down, \u2192 - move right, \u2190 - move left')
         else:
-            print('Неверная команда')
+            print('W - move up, S - move down, D - move right, A - move left')
+            print('REVERSE - rotate 180, LEFT - left rotate 90, RIGHT - right rotate 90')
 
-        self.set_position_robot()
+    def can_move(self):
+        front_center = self.normalize_position(Point(*map(sum, zip(self.robot.position, self.robot.direction))))
+        if self.robot.direction.x != 0:
+            front_idx = [front_center - 1,
+                         front_center,
+                         front_center + 1]
+        else:
+            front_idx = [front_center - self.width,
+                         front_center,
+                         front_center + self.width]
+        for idx in front_idx:
+            if self.field[idx] != '-':
+                return False
+        return True
 
-    def set_position_robot(self):
-        self.position = self.center + \
-                        self.robot.position[0] - \
-                        self.width * self.robot.position[1]
+    def update(self, command: str):
+        command = command.upper()
+        direction = self.robot.get_direction()
+        if command == "W":
+            direction = Point(0, 1)
+        elif command == "S":
+            direction = Point(0, -1)
+        elif command == "D":
+            direction = Point(1, 0)
+        elif command == "A":
+            direction = Point(-1, 0)
+
+        if command == "REVERSE":
+            self.robot.rotate(RotateDirection.BACKWARD)
+        elif command == "LEFT":
+            self.robot.rotate(RotateDirection.LEFT)
+        elif command == "RIGHT":
+            self.robot.rotate(RotateDirection.RIGHT)
+        elif command == "LIVE":
+            self.is_live = True
+        elif command == "ESC":
+            self.is_live = False
+        else:
+            if direction != self.robot.get_direction():
+                self.robot.rotate(self.get_rotate_direction(direction))
+            else:
+                if self.can_move():
+                    self.robot.move()
+
+        self.commands.append(command)
+        self.last_command = self.commands[-1]
+        self.render()
 
 
 def run_game():
-    print(chr(27) + "[2J")
-
     robot = Robot()
-    game = Game(15, 15, robot)
+    game = Game(20, 30, robot)
     game.render()
     while True:
-        print('\x1b[0;32;40m' + 'Поехали!' + '\x1b[0m')
-        print('w - move up, s - move down, d - move right, a - move left')
-        print('up - rotate up, '
-              'down - rotate down, '
-              'right - rotate right, '
-              'left - rotate left')
-        command = input('Ваш ход: ')
-        game.update(command)
+        if not game.is_live:
+            command = input('Ваш ход: ')
+            game.update(command)
 
 
 if __name__ == '__main__':
