@@ -276,7 +276,7 @@ class Game:
         print('REVERSE - rotate 180, '
               'LEFT - left rotate 90, '
               'RIGHT - right rotate 90')
-        print('CTRL + C - for exit')
+        print('CTRL + C - for save and exit')
 
     def can_move(self):
         """
