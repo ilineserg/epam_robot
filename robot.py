@@ -74,9 +74,6 @@ class Robot:
         self.direction = Point(0, 1)
         self.color = Colors.GREEN
 
-        self.body = u'\u2554\u2551\u2557' \
-                    u'\u2551\u2550\u2551' \
-                    u'\u255a\u2550\u255d'
         self.rotated_up = u'\u2554\u2551\u2557' \
                           u'\u2551\u2550\u2551' \
                           u'\u255a\u2550\u255d'
